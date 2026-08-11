@@ -41,6 +41,18 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(NameAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleNameExists (
+        NameAlreadyExistsException ex , HttpServletRequest request) {
+
+        return buildResponse(HttpStatus.CONFLICT,
+                    "Name Already Exists" ,
+                    ex.getMessage(),
+                    request.getRequestURI()
+        );
+    }
+
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(
             BadCredentialsException ex,

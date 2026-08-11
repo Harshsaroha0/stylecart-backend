@@ -25,9 +25,11 @@ HELP.md
 # Logs
 *.log
 
-# Environment files
+# Environment variables
+src/main/java/com/microservices/stylecartbackend/.env
 .env
-*.env
+**/.env
+
 
 # OS generated files
 .DS_Store
