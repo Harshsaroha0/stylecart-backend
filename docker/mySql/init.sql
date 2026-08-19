@@ -1,5 +1,0 @@
-CREATE DATABASE IF NOT EXISTS stylecart_dev;
-
-CREATE DATABASE IF NOT EXISTS stylecart_test;
-
-CREATE DATABASE IF NOT EXISTS stylecart_prod;

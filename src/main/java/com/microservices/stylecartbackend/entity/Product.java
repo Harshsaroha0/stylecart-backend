@@ -23,7 +23,7 @@ public class Product extends BaseEntity {
     @Column(nullable = false , precision = 10 , scale = 2)
     private BigDecimal price;
 
-    @Column(nullable = false)
+    @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
     @ManyToOne(fetch = FetchType.LAZY)
