@@ -9,9 +9,14 @@ import com.microservices.stylecartbackend.exception.ResourceNotFoundException;
 import com.microservices.stylecartbackend.repository.CategoryRepository;
 import com.microservices.stylecartbackend.repository.ProductRepository;
 import com.microservices.stylecartbackend.serviceInterface.ProductService;
+import com.microservices.stylecartbackend.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -134,5 +139,48 @@ public class ProductServiceImpl implements ProductService {
 
         productRepository.delete(product);
 
+    }
+
+    @Override
+    public Page<ProductResponse> filterProducts(String search, Long categoryId, BigDecimal minPrice, BigDecimal maxPrice , Pageable pageable) {
+
+
+        Specification<Product> specification = Specification.allOf();
+
+        if (search != null && !search.isBlank()) {
+            specification = specification.and(
+                    ProductSpecification.hasName(search)
+            );
+        }
+
+        if (categoryId != null) {
+            specification = specification.and(
+                    ProductSpecification.hasCategory(categoryId)
+            );
+        }
+
+        if (minPrice != null) {
+            specification = specification.and(
+                    ProductSpecification.hasMinPrice(minPrice)
+            );
+        }
+
+        if (maxPrice != null) {
+            specification = specification.and(
+                    ProductSpecification.hasMaxPrice(maxPrice)
+            );
+        }
+
+        return productRepository
+                .findAll(specification, pageable)
+                .map(product -> new ProductResponse(
+                        product.getId(),
+                        product.getName(),
+                        product.getDescription(),
+                        product.getPrice(),
+                        product.getStockQuantity(),
+                        product.getCategory().getId(),
+                        product.getCategory().getName()
+                ));
     }
 }

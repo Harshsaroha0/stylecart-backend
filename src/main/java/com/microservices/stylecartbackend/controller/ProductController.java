@@ -4,15 +4,22 @@ import com.microservices.stylecartbackend.dto.ProductRequest;
 import com.microservices.stylecartbackend.dto.ProductResponse;
 import com.microservices.stylecartbackend.serviceInterface.ProductService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
+import java.util.Set;
 
-import java.util.List;
-
+@Validated
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/products")
@@ -38,18 +45,12 @@ public class ProductController {
         return ResponseEntity.ok(productService.getById(id));
     }
 
-    @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAll() {
-
-        return ResponseEntity.ok(productService.getAll());
-    }
-
     @PutMapping("{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> update(
-            @PathVariable long id , @Valid @RequestBody ProductRequest request) {
+            @PathVariable long id, @Valid @RequestBody ProductRequest request) {
 
-        return ResponseEntity.ok(productService.update(id , request));
+        return ResponseEntity.ok(productService.update(id, request));
     }
 
     @DeleteMapping("{id}")
@@ -61,4 +62,61 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping
+    public ResponseEntity<Page<ProductResponse>> getAll(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(defaultValue = "0")@Min(0) int page,
+            @RequestParam(defaultValue = "10")@Min(0) @Max(50) int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
+
+        Set<String> allowedSortFields = Set.of(
+                "id",
+                "name",
+                "price",
+                "stockQuantity"
+        );
+
+        if (!allowedSortFields.contains(sortBy)) {
+            throw new IllegalArgumentException(
+                    "Invalid sort field: " + sortBy
+            );
+        }
+
+        if (!direction.equalsIgnoreCase("asc")
+                && !direction.equalsIgnoreCase("desc")) {
+
+            throw new IllegalArgumentException(
+                    "Direction must be 'asc' or 'desc'"
+            );
+        }
+
+        if (minPrice != null && maxPrice != null
+                && minPrice.compareTo(maxPrice) > 0) {
+
+            throw new IllegalArgumentException(
+                    "Minimum price cannot be greater than maximum price"
+            );
+        }
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        if (minPrice != null && maxPrice != null
+                && minPrice.compareTo(maxPrice) > 0) {
+
+            throw new IllegalArgumentException(
+                    "minPrice cannot be greater than maxPrice"
+            );
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+       return ResponseEntity.ok(
+               productService.filterProducts(search,categoryId, minPrice,maxPrice,pageable));
+    }
 }
